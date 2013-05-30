@@ -134,8 +134,8 @@ class TranslateBehavior extends ModelBehavior {
 				)
 			);
 			$conditionFields = $this->_checkConditions($Model, $query);
-			foreach ($conditionFields as $field) {
-				$query = $this->_addJoin($Model, $query, $field, $field, $locale);
+			foreach ($conditionFields as $aliasField => $field) {
+				$query = $this->_addJoin($Model, $query, $field, $aliasField, $locale);
 			}
 			unset($this->_joinTable, $this->_runtimeModel);
 			return $query;
@@ -203,8 +203,8 @@ class TranslateBehavior extends ModelBehavior {
 				if (is_numeric($field)) {
 					$field = $assoc;
 				}
-				if (strpos($col, $field) !== false) {
-					$conditionFields[] = $field;
+				if (strpos($col, $field) !== false || strpos($col, $assoc) !== false) {
+					$conditionFields[$field] = $assoc;
 				}
 			}
 		}
