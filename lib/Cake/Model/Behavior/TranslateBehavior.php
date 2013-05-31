@@ -611,7 +611,7 @@ class TranslateBehavior extends ModelBehavior {
 					}
 				}
 				$associations[$association] = array_merge($default, array('conditions' => array(
-					'model' => $Model->alias,
+					'model' => $Model->name,
 					$RuntimeModel->displayField => $field
 				)));
 			}
