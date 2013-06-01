@@ -40,7 +40,7 @@ class TranslateBehaviorRelatedTest extends CakeTestCase {
 		'core.translated_item', 'core.translate', 'core.translate_table',
 		'core.translated_article', 'core.translate_article', 'core.user', 'core.comment', 'core.tag', 'core.articles_tag',
 		'core.translate_with_prefix',
-		'translated_article_alias'
+		'translate_article_alias', 'translated_article_alias'
 	);
 
 /**
@@ -49,7 +49,8 @@ class TranslateBehaviorRelatedTest extends CakeTestCase {
  * @return void
  */
 	public function testSaveAllTranslatedAssociations() {
-		$this->loadFixtures('Translate', 'TranslateArticle', 'TranslatedItem', 'TranslatedArticle', 'User');
+		$this->loadFixtures('Translate', 'TranslateArticle', 'TranslatedArticle', 'TranslatedItem');
+
 		$Model = new TranslatedArticle();
 		$Model->locale = 'eng';
 
@@ -92,9 +93,9 @@ class TranslateBehaviorRelatedTest extends CakeTestCase {
  * @return void
  */
 	public function testSaveAllTranslatedAssociationsWithAliasses() {
-		$this->loadFixtures('Translate', 'TranslateArticle', 'TranslatedItem', 'TranslatedArticle', 'User', 'TranslatedArticleAlias');
+		$this->loadFixtures('Translate', 'TranslatedItem', 'TranslateArticleAlias', 'TranslatedArticleAlias');
 		$Model = new TranslatedArticleAlias();
-		$Model->locale = 'eng';
+		$Model->locale = $Model->TranslatedItemAlias->locale = 'eng';
 
 		$data = array(
 			'TranslatedArticleAlias' => array(
@@ -151,6 +152,74 @@ class TranslateBehaviorRelatedTest extends CakeTestCase {
 		}
 	}
 
+/**
+ * Delete should also delete the translations
+ */
+	public function testDelete() {
+		$this->loadFixtures('Translate', 'TranslatedItem');
+		$Model = new TranslatedItem();
+		$Model->locale = 'eng';
+
+		$result = $Model->delete(1);
+		$this->assertTrue($result);
+
+		$i18n = new TranslateTestModel();
+		$this->assertEquals(0, $i18n->find('count', array('conditions' => array(
+			'model'       => 'TranslatedItem',
+			'foreign_key' => 1,
+		))));
+	}
+
+/**
+ * Delete on Model Alias should also delete the translations.
+ *
+ * @return void
+ */
+	public function testDeleteTranslatedWithAlias() {
+		$this->loadFixtures('Translate', 'TranslatedItem');
+		$Model = new TranslatedItemAlias();
+		$Model->locale = 'eng';
+
+		$this->assertEquals('TranslatedItemAlias', $Model->alias);
+
+		$result = $Model->delete(1);
+		$this->assertTrue($result);
+
+		$i18n = new TranslateTestModel();
+		$this->assertEquals(0, $i18n->find('count', array('conditions' => array(
+			'model'       => 'TranslatedItem',
+			'foreign_key' => 1,
+		))));
+	}
+
+/**
+ * Associated delete on alias
+ */
+	public function testDeleteTranslatedAssociationsWithAliasses() {
+		$this->loadFixtures('Translate', 'TranslatedItem', 'TranslateArticleAlias', 'TranslatedArticleAlias');
+		$Model = new TranslatedArticleAlias();
+		$Model->locale = $Model->TranslatedItemAlias->locale = 'eng';
+
+		$result = $Model->TranslatedItemAlias->delete(1);
+		$this->assertTrue($result);
+
+		$result = $Model->TranslatedItemAlias->find('count', array('conditions' => array(
+			$Model->TranslatedItemAlias->escapeField('id') => 1
+		)));
+		$this->assertEquals(0, $result);
+
+		// check for in case we forget to set the locale on the associated item
+		$result = $Model->TranslatedItemAlias->find('count');
+		$this->assertEquals(2, $result);
+
+		$i18n = new TranslateTestModel();
+		$result = $i18n->find('count', array('conditions' => array(
+			'model'       => 'TranslatedItem',
+			'foreign_key' => 1,
+		)));
+		$this->assertEquals(0, $result);
+	}
+
 }
 
 class TranslatedArticleAlias extends TranslatedArticle {
@@ -159,4 +228,9 @@ class TranslatedArticleAlias extends TranslatedArticle {
 		'className' => 'TranslatedItem',
 		'foreignKey' => 'translated_article_id'
 	) );
+}
+
+class TranslatedItemAlias extends TranslatedItem {
+	public $name = 'TranslatedItem';
+	public $alias = 'TranslatedItemAlias';
 }
